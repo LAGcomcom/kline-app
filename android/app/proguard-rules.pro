@@ -1,0 +1,5 @@
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.kline.app.data.** { *; }
+-dontwarn okhttp3.**
+-dontwarn retrofit2.**
