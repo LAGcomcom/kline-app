@@ -1,6 +1,7 @@
 package com.kline.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,121 +21,136 @@ import com.kline.app.data.*
 fun RankScreen() {
     var symbols by remember { mutableStateOf<List<SymbolInfo>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var sortAsc by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+    var sortMode by remember { mutableStateOf("change") } // change, vol, price
 
     LaunchedEffect(Unit) {
         try {
             symbols = ApiClient.api.getSymbols()
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            errorMsg = e.message ?: "加载失败"
+        }
         isLoading = false
     }
 
-    val sorted = remember(symbols, sortAsc) {
-        symbols.sortedBy {
-            it.change24h.replace("%", "").toDoubleOrNull() ?: 0.0
-        }.let { if (sortAsc) it else it.reversed() }
+    val sorted = remember(symbols, sortMode) {
+        when (sortMode) {
+            "vol" -> symbols.sortedByDescending { it.vol }
+            "price" -> symbols.sortedByDescending { it.last.toDoubleOrNull() ?: 0.0 }
+            else -> symbols.sortedByDescending { it.chg }
+        }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(12.dp)
+        modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A)).padding(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("涨跌幅排行", style = MaterialTheme.typography.titleMedium)
-            Row {
-                TextButton(onClick = { sortAsc = false }) {
-                    Text("涨幅", color = if (!sortAsc) MaterialTheme.colorScheme.primary else Color.Gray)
-                }
-                TextButton(onClick = { sortAsc = true }) {
-                    Text("跌幅", color = if (sortAsc) MaterialTheme.colorScheme.primary else Color.Gray)
-                }
-            }
+        Text("涨跌幅排行", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+
+        // 排序选项
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SortChip("涨跌幅", sortMode == "change") { sortMode = "change" }
+            SortChip("成交量", sortMode == "vol") { sortMode = "vol" }
+            SortChip("价格", sortMode == "price") { sortMode = "price" }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        // 表头
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
             Text("币种", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f))
             Text("价格", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f))
             Text("24H涨跌", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f))
+            Text("成交量", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f))
         }
+        HorizontalDivider(color = Color(0xFF2C2C2E))
 
-        Spacer(modifier = Modifier.height(4.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        when {
+            isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else {
-            LazyColumn {
-                items(sorted) { sym ->
-                    RankItem(sym)
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                }
+            errorMsg.isNotEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(errorMsg, color = Color.Gray)
+            }
+            else -> LazyColumn {
+                items(sorted) { sym -> RankItem(sym) }
             }
         }
     }
 }
 
 @Composable
+fun SortChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.clip(RoundedCornerShape(6.dp))
+            .background(if (selected) Color(0xFF007AFF) else Color(0xFF1C1C1E))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(label, color = if (selected) Color.White else Color.Gray, fontSize = 12.sp)
+    }
+}
+
+@Composable
 fun RankItem(sym: SymbolInfo) {
-    val change = sym.change24h.replace("%", "").toDoubleOrNull() ?: 0.0
-    val changeColor = if (change >= 0) Color(0xFF34C759) else Color(0xFFFF3B30)
+    val changeColor = if (sym.chg >= 0) Color(0xFF34C759) else Color(0xFFFF3B30)
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             sym.symbol.replace("-USDT", "").replace("_USDT", ""),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Color.White,
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f)
         )
         Text(
-            formatPrice(sym.last),
-            color = MaterialTheme.colorScheme.onSurface,
+            formatRankPrice(sym.last),
+            color = Color(0xFFE5E5E5),
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
         Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(4.dp))
+            modifier = Modifier.weight(1f).clip(RoundedCornerShape(4.dp))
                 .background(changeColor.copy(alpha = 0.15f))
                 .padding(horizontal = 8.dp, vertical = 3.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "${if (change >= 0) "+" else ""}${"%.2f".format(change)}%",
+                "${if (sym.chg >= 0) "+" else ""}${"%.2f".format(sym.chg)}%",
                 color = changeColor,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
+        Text(
+            formatVolNum(sym.vol),
+            color = Color(0xFF8E8E93),
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
     }
+    HorizontalDivider(color = Color(0xFF1C1C1E), thickness = 0.5.dp)
 }
 
-fun formatPrice(p: String): String {
+fun formatRankPrice(p: String): String {
     val d = p.toDoubleOrNull() ?: return p
     return when {
         d >= 1000 -> "%,.2f".format(d)
-        d >= 1 -> "%.2f".format(d)
+        d >= 1 -> "%.4f".format(d)
         else -> "%.6f".format(d)
+    }
+}
+
+fun formatVolNum(d: Double): String {
+    return when {
+        d >= 1e9 -> "%.1fB".format(d / 1e9)
+        d >= 1e6 -> "%.1fM".format(d / 1e6)
+        d >= 1e3 -> "%.1fK".format(d / 1e3)
+        else -> "%.0f".format(d)
     }
 }

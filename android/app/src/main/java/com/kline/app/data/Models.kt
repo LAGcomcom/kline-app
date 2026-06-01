@@ -1,5 +1,7 @@
 package com.kline.app.data
 
+import com.google.gson.annotations.SerializedName
+
 data class Kline(
     val time: Long,
     val open: Double,
@@ -10,20 +12,18 @@ data class Kline(
 )
 
 data class SymbolInfo(
-    val symbol: String,
-    val name: String = "",
+    @SerializedName("id") val symbol: String = "",
+    val base: String = "",
     val last: String = "",
-    val change24h: String = "",
-    val high24h: String = "",
-    val low24h: String = "",
-    val vol24h: String = ""
+    val vol: Double = 0.0,
+    val chg: Double = 0.0
 )
 
 data class PriceAlert(
     val id: String = "",
     val symbol: String,
     val target: Double,
-    val dir: String, // "above" or "below"
+    val dir: String,
     val active: Boolean = true
 )
 
@@ -69,23 +69,26 @@ data class DivergenceInfo(
     val desc: String = ""
 )
 
+// Ticker API: /api/v2/ticker?inst_id=BTC-USDT
+// {"last":71602.4,"bid":71602.3,"ask":71602.4,"high24h":74210.9,"low24h":71384.4,"vol24h":5790.2695489,"change24h":-2.74}
 data class TickerData(
-    val symbol: String = "",
-    val last: String = "",
-    val change24h: String = "",
-    val high24h: String = "",
-    val low24h: String = "",
-    val vol24h: String = ""
+    val last: Double = 0.0,
+    val bid: Double = 0.0,
+    val ask: Double = 0.0,
+    val high24h: Double = 0.0,
+    val low24h: Double = 0.0,
+    val vol24h: Double = 0.0,
+    val change24h: Double = 0.0
 )
 
+// Multi-exchange API: /api/multi-exchange?symbol=BTC
+// {"exchanges":[{"exchange":"okx","last":71622.1,"change24h":-2.71},...]}
 data class ExchangePrice(
     val exchange: String = "",
-    val price: String = ""
+    val last: Double = 0.0,
+    val change24h: Double = 0.0
 )
 
 data class MultiExchangeResult(
-    val symbol: String = "",
-    val prices: List<ExchangePrice>? = null,
-    val avg_price: String = "",
-    val spread_pct: String = ""
+    val exchanges: List<ExchangePrice>? = null
 )
