@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- K line chart icon -->
+    <path
+        android:fillColor="#007AFF"
+        android:pathData="M24,70 L36,50 L48,60 L60,35 L72,45 L84,28"
+        android:strokeWidth="4"
+        android:strokeColor="#007AFF" />
+    <path
+        android:fillColor="#34C759"
+        android:pathData="M24,74 L36,74 L36,68 L24,68 Z" />
+    <path
+        android:fillColor="#FF3B30"
+        android:pathData="M42,74 L54,74 L54,62 L42,62 Z" />
+    <path
+        android:fillColor="#34C759"
+        android:pathData="M60,74 L72,74 L72,55 L60,55 Z" />
+    <path
+        android:fillColor="#007AFF"
+        android:pathData="M78,74 L90,74 L90,48 L78,48 Z" />
+</vector>
