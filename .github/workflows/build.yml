@@ -24,17 +24,19 @@ jobs:
           gradle-version: '8.11.1'
 
       - name: Generate Gradle Wrapper
+        working-directory: android
         run: gradle wrapper
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x android/gradlew
 
       - name: Build Release APK
+        working-directory: android
         run: ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: kline-app-release
-          path: app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
